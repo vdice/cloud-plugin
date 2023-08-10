@@ -1,7 +1,7 @@
 mod commands;
 mod opts;
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result};
 use clap::{FromArgMatches, Parser};
 use commands::{
     deploy::DeployCommand, login::LoginCommand, sqlite::SqliteCommand, variables::VariablesCommand,

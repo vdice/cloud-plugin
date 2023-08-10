@@ -166,7 +166,7 @@ impl DeployCommand {
             None
         };
 
-        let app_file = crate::manifest::resolve_file_path(&self.app_source)?;
+        let app_file = spin_common::paths::resolve_manifest_file_path(&self.app_source)?;
         let dir = tempfile::tempdir()?;
         let application = spin_loader::local::from_file(&app_file, Some(dir.path())).await?;
 
@@ -195,14 +195,8 @@ impl DeployCommand {
         println!("Deploying...");
 
         // Create or update app
-<<<<<<< HEAD
-        // TODO: this process involves many calls to Cloud. Should be able to update the channel
-        // via only `add_revision` if bindle naming schema is updated so bindles can be deterministically ordered by Cloud.
-        let channel_id = match get_app_id_cloud(&client, &name).await {
-=======
-        let channel_id = match self.get_app_id_cloud(&client, name.clone()).await {
->>>>>>> 4dbdcdd (Working OCI based deploy)
-            Ok(app_id) => {
+        let channel_id = match self.try_get_app_id_cloud(&client, name.clone()).await {
+            Ok(Some(app_id)) => {
                 if uses_default_db(&cfg) {
                     create_default_database_if_does_not_exist(&name, app_id, &client).await?;
                 }
@@ -240,10 +234,10 @@ impl DeployCommand {
                 set_variables(&client, app_id, &self.variables).await?;
 
                 existing_channel_id
-            }
-            Err(_) => {
+            },
+            _ => {
                 let create_default_db = uses_default_db(&cfg);
-                let app_id = CloudClient::add_app(&client, &name, &storage_id)
+                let app_id = CloudClient::add_app(&client, &name, &storage_id, uses_default_db(&cfg))
                     .await
                     .context("Unable to create app")?;
 
@@ -482,6 +476,7 @@ impl DeployCommand {
             name
         ))
     }
+
 
     async fn push_oci(
         &self,
